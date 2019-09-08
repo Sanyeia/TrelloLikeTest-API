@@ -34,14 +34,10 @@ let TaskSchema = new Schema({
     }],
 });
 
-
+//search function
 TaskSchema.statics.findByTitle = function (search, list_id) {
-    //only tasks from the list and status different from 4 (Archived)
-    let query = {
-        list: list_id,
-        status: {$ne: 4},
-    };
-
+    //only tasks from the list
+    let query = { list: list_id };
     if (search) {
         //create the regex for the query with the given search ignoring case
         search = new RegExp(search, 'i');
@@ -49,6 +45,22 @@ TaskSchema.statics.findByTitle = function (search, list_id) {
     }
 
     return this.find(query).sort('order');
+};
+
+//query helper that filters tasks by status
+TaskSchema.query.filterStatus = function (status) {
+    let query = {};
+    status = parseInt(status);
+    //only if the parameter is sent and the status is an integer between 1 and 4
+    if (status && (status >= 1 && status <= 4) ) {
+        //only tasks with the given status
+        query.status = status;
+    } else {
+        //by default returns only tasks with status different from 4 (Archived)
+        query.status = { $ne: 4 };
+    }
+    console.log(status,query);    
+    return this.where(query);
 };
 
 module.exports = mongoose.model('Task', TaskSchema);

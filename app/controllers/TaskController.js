@@ -22,16 +22,16 @@ let listTasks = (req, res) => {
         if (!list) return errorResponse(res, 'List not found', 404);
 
         Task.findByTitle(req.query.search, list_id)
-        .then( (tasks) => {
-            
+        .filterStatus(req.query.status)
+        .exec(function(err, tasks) {
+            if (err) return errorResponse(res, err, 400);
 
             //if the list is empty then the result is an empty array instead of null
             if (!tasks) tasks = [];
 
             return showOne(res, tasks, 200);
-        }).catch( (err) => {
-            if (err) return errorResponse(res, err, 400);
         });
+
     });
 };
 
@@ -46,7 +46,7 @@ let newTask = (req, res) => {
         let data = filter(body, Task);
 
         //try to create an ObjectId for the new object
-        //if it fails it means that the id sended through the params is invalid
+        //if it fails it means that the id sent through the params is invalid
         try {
             data.list = mongoose.Types.ObjectId(list_id);
         } catch (error) { return errorResponse(res, 'Invalid list_id', 400); }

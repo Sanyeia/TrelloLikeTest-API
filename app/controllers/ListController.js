@@ -54,7 +54,7 @@ app.post('/', (req, res) => {
     let data = filter(body, List);
     
     //try to create an ObjectId for the new object
-    //if it fails it means that the id sended through the params is invalid
+    //if it fails it means that the id sent through the params is invalid
     try {
         data.owner = mongoose.Types.ObjectId(req.user._id);
     } catch (error) { return errorResponse(res, 'Invalid list_id', 400); }
