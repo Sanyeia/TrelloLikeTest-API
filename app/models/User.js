@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const mongoose_delete = require('mongoose-delete');
+const mongooseHidden = require('mongoose-hidden')()
 const uniqueValidator = require('mongoose-unique-validator');
 const mongoosePaginate = require('mongoose-paginate-v2');
 const bcrypt = require('bcryptjs');
@@ -51,22 +52,18 @@ let UserSchema = new Schema({
 });
 
 //get the user full name
-UserSchema.virtual('full_name').get(function () {
+UserSchema.virtual('full_name').get(() => {
     return this.name.firstname + ' ' + this.name.lastname;
 });
-
-//hidde password when the user is returned
-UserSchema.methods.toJSON = function () {
-    let userObj = this.toObject();
-    delete userObj.password;
-    return userObj;
-}
 
 /**
  * =================
  * Plugins
  * =================
  */
+
+//hidden attributes plugin, hide password when the user is returned
+UserSchema.plugin(mongooseHidden, { hidden: { password: true } })
 
 //softdelete plugin
 UserSchema.plugin(mongoose_delete, { overrideMethods: ['count', 'find', 'findOne', 'findOneAndUpdate', 'update'] });
@@ -83,15 +80,15 @@ UserSchema.plugin(mongoosePaginate);
  * =================
  */
 
-//hash password before save of update functions
+//hash password before save or update
 UserSchema.pre('save', function (next) {
     // only hash the password if it has been modified (or is new)
     if (!this.isModified('password')) {
         // hash the new password
-        this.password = bcrypt.hashSync(this.password, 10);
+        return next();
     }
-
-    return next();
+    this.password = bcrypt.hashSync(this.password, 10);
+    next();
 });
 
 module.exports = mongoose.model('User', UserSchema);

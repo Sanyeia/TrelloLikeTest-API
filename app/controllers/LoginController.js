@@ -35,7 +35,7 @@ app.post('/', (req, res) => {
         }
 
         let token = jwt.sign({
-            usuario: usr
+            user: usr
         }, process.env.TOKEN_SEED, { expiresIn: process.env.TOKEN_DURATION })
 
         let t = jwt.decode(token);

@@ -29,7 +29,7 @@ process.env.PORT = process.env.PORT || 1337;
  * =============================
  */
 //Expires In
-process.env.TOKEN_DURATION = '2 days'//(60 * 60 * 24 * 30); //30 days
+process.env.TOKEN_DURATION = '3 days'//(60 * 60 * 24 * 30); //30 days
 //Token Seed
 process.env.TOKEN_SEED = 'seed_de_desarrollo';
 

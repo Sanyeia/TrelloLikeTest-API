@@ -50,4 +50,4 @@ mongoose.connect(process.env.URL_DB, { useNewUrlParser: true }, (err, resp) => {
  */
 app.listen(process.env.PORT, () => {
     console.log(pj.name,'ready, listening in port:', process.env.PORT);
-})
+});

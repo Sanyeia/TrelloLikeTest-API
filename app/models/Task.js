@@ -11,18 +11,16 @@ let TaskSchema = new Schema({
     description: {
         type: String,
     },
-    file: {
-        type: String,
-    },
     order: {
         type: Number,
         default: 0
     },
     status: {
-        type: Number,
+        type: String,
         default: 1,
         enum: {
-            values: [1,2,3,4],
+            //(Open, In-Progress, Completed, Archived)
+            values: ['1', '2', '3', '4'],
             message: "{VALUE} isn't a valid"
         }
     },
@@ -36,7 +34,21 @@ let TaskSchema = new Schema({
     }],
 });
 
-//autoincrement the order field
-UserSchema.plugin(AutoIncrement, {inc_field: 'id'});
+
+TaskSchema.statics.findByTitle = function (search, list_id) {
+    //only tasks from the list and status different from 4 (Archived)
+    let query = {
+        list: list_id,
+        status: {$ne: 4},
+    };
+
+    if (search) {
+        //create the regex for the query with the given search ignoring case
+        search = new RegExp(search, 'i');
+        query.$or = [{ title: search }];
+    }
+
+    return this.find(query).sort('order');
+};
 
 module.exports = mongoose.model('Task', TaskSchema);

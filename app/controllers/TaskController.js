@@ -1,76 +1,158 @@
 const express = require('express');
-
+const mongoose = require('mongoose');
+const List = require('../models/List');
+const User = require('../models/User');
 const Task = require('../models/Task');
 const { showOne, errorResponse } = require('../extra/responser');
-const { createFile } = require('../extra/file_util');
-const { checkToken } = require('../middlewares/auth');
 const { filter } = require('../extra/filter_data');
 
 const app = express();
-app.use( fileUpload({parseNested: true}) );
 
-app.post('/', (req, res) => {
-    let body = req.body;
-    let data = filter(body, Task);
-    let task = new Task(data);
+/**
+ * ================
+ * Specific Methods
+ * ================
+ */
+let listTasks = (req, res) => {
+    let list_id = req.params.list;
 
-    task.save( async (err, task) => {
-        if(err){
-            return errorResponse(res, err, 400);
-        }
+    List.findOne({ _id: list_id }, (err, list) => {
+        if (err) return errorResponse(res, err, 400);
 
-        if ( Object.keys(req.files).length != 0 && req.files.image ) {
-            let url = createFile('task', req.files.image);
+        if (!list) return errorResponse(res, 'List not found', 404);
 
-            task.file = url;
-            await task.save();
-        }
+        Task.findByTitle(req.query.search, list_id)
+        .then( (tasks) => {
+            
 
-        return showOne(res, task, 201);
+            //if the list is empty then the result is an empty array instead of null
+            if (!tasks) tasks = [];
+
+            return showOne(res, tasks, 200);
+        }).catch( (err) => {
+            if (err) return errorResponse(res, err, 400);
+        });
     });
-});
+};
 
-app.put('/:id', [checkToken], (req, res) => {
-    let id = req.params.id;
-    let body = filter(req.body, Task);
+let newTask = (req, res) => {
+    let list_id = req.params.list;
+    List.findOne({ _id: list_id }, async (err, list) => {
+        if (err) return errorResponse(res, err, 400);
 
-    Task.findByIdAndUpdate(id, body, { new: true, runValidators: true, context: 'query'}, async (err, task) => {
-        if (err) {
-            return errorResponse(res, err, 400);
-        }
+        if (!list) return errorResponse(res, 'List not found', 404);
 
-        if (!task) {
-            return errorResponse(res, 'Task not found', 404);
-        }
+        let body = req.body;
+        let data = filter(body, Task);
 
-        if ( Object.keys(req.files).length != 0 && req.files.image ) {
-            let url = updateFile('task', req.files.image, task.file);
+        //try to create an ObjectId for the new object
+        //if it fails it means that the id sended through the params is invalid
+        try {
+            data.list = mongoose.Types.ObjectId(list_id);
+        } catch (error) { return errorResponse(res, 'Invalid list_id', 400); }
 
-            if(url){
-                task.file = url;
-                await task.save();
+        //search for the actual order and add the new register to the bottom
+        let count = await Task.countDocuments({ list: list_id });
+        data.order = count + 1;
+
+        let task = new Task(data);
+        task.save((err, task) => {
+            if (err) {
+                return errorResponse(res, err, 400);
             }
-        }
+
+            return showOne(res, task, 201);
+        });
+    });
+};
+
+/**
+ * ================
+ * Resource Methods
+ * ================
+ */
+
+app.patch('/:id', (req, res) => {
+    let body = req.body;
+    let options = { new: true, runValidators: true, context: 'query'};
+
+    Task.findOneAndUpdate({_id: req.params.id}, {$set: body}, options, (err, task) => {
+        if (err) return errorResponse(res, err, 400);
+
+        if (!task) return errorResponse(res, 'Task not found', 404);
 
         return showOne(res, task, 200);
     });
 });
 
-app.delete('/:id', [checkToken], (req, res) => {
-    let id = req.params.id;
+app.patch('/:id/assign', (req, res) => {
+    let user_id = req.body.user_id;
+    
+    //if the user_id is not in the request or is the same user
+    if(!user_id || user_id == req.user._id){
+        return errorResponse(res, 'invalid user to assign', 422);
+    }
 
-    Task.deleteById(id, (err, task) => {
-        if(err){
-            return errorResponse(res, err, 400);
-        }
+    //finds the task by its id
+    Task.findOne({ _id: req.params.id }, (err, task) => {
+        if (err) return errorResponse(res, err, 400);
 
-        if(task == null){
-            return errorResponse(res, 'Task not found', 404);
-        }else{
+        if (!task) return errorResponse(res, 'Task not found', 404);
+
+        //checks if the user with the given user_id exists
+        User.findOne({ _id: user_id }, async (err, user) => {
+            if (err) return errorResponse(res, err, 400);
+            
+            //if not error 404
+            if (!user) return errorResponse(res, 'Invalid user', 404);
+
+            //checks if the user is already assign to the task
+            if( task.users.includes(user._id) ) return errorResponse(res, 'User already assigned to this task', 409);
+
+            task.users.push(user._id);
+            await task.save();
+
             return showOne(res, task, 200);
-        }
-
+        });
     });
 });
 
-module.exports = app;
+app.patch('/:id/order', (req, res) => {
+    let user_id = req.body.user_id;
+    
+    //if the user_id is not in the request or is the same user
+    if(!user_id || user_id == req.user._id){
+        return errorResponse(res, 'invalid user to assign', 422);
+    }
+
+    Task.findOne({ _id: req.params.id }, async (err, task) => {
+        if (err) return errorResponse(res, err, 400);
+
+        if (!task) return errorResponse(res, 'Task not found', 404);
+
+        task.users.push(user._id);
+        await task.save();
+
+        return showOne(res, task, 200);
+    });
+});
+
+app.delete('/:id', (req, res) => {
+    Task.findById(req.params.id, (err, task) => {
+        if (err) return errorResponse(res, err, 400);
+
+        if (!task) return errorResponse(res, 'Task not found', 404);
+
+        task.remove((err, task) => {
+            if (err) return errorResponse(res, err, 400);
+            
+            return showOne(res, task, 200);
+        });
+    });
+});
+
+module.exports = {
+    newTask,
+    listTasks,
+    resource: app
+};

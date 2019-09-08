@@ -5,7 +5,9 @@ const hidden = [
     '_id',
     '__v',
     'photo',
-    'deleted'
+    'deleted',
+    'owner',
+    'users',
 ];
 
 /**
@@ -33,19 +35,13 @@ let setData = (body, keys) => {
 let filter = (data, model, assign = true) => {
     let keys = [];
     let attbrs;
-    let nested = [];
 
     //iterate over the schema attributes
-    model.schema.eachPath(function (path) {
+    model.schema.eachPath( (path) => {
         //checks if its a nested attribute
         attbrs = path.split('.');
 
-        if (attbrs.length != 1) {
-            //checks if the attribute is hidden
-            if (hidden.indexOf(path) < 0) {
-                nested.push(path);
-            }
-        } else {
+        if (attbrs.length == 1) {
             //checks if the attribute is hidden
             if (hidden.indexOf(path) < 0) {
                 keys.push(path);

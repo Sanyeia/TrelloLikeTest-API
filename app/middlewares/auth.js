@@ -34,7 +34,14 @@ let checkToken = (req, res, next) => {
             });
         }
 
-        req.usuario = decoded.usuario;
+        if(!decoded.user){
+            return res.status(401).json({
+                code: 401,
+                error: 'Unauthorized - Invalid token'
+            });
+        }
+
+        req.user = decoded.user;
         next();
 
     });

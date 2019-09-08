@@ -13,7 +13,12 @@ module.exports = {
   },
 
   errorResponse(res, error, code = 400) {
-
+    if(error.name){
+      //checks if the error is because the id is invalid (probably because of a bad parameter)
+      if(error.name === 'CastError' && error.kind === 'ObjectId'){
+        error = 'Missing/Invalid parameters, please read the documentation and try again';
+      }
+    }
     return res.status(code).json({
       code,
       error
