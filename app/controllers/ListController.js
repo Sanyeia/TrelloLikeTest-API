@@ -1,16 +1,21 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const List = require('../models/List');
-const Task = require('../models/Task');
-const User = require('../models/User');
 const { showOne, errorResponse } = require('../extra/responser');
 const { filter } = require('../extra/filter_data');
 
 const app = express();
 
 app.get('/', (req, res) => {
+    /**
+     * this query is not paginated beacuse it's a small application right now 
+     * so for now and for convinience all the resuls are returned
+     */
     List.find()
-    .populate('tasks')
+    .populate({
+        path: 'tasks',
+        select: '_id title status'
+    })
     .exec( (err, lists) => {
         if (err) {
             return errorResponse(res, err, 400);

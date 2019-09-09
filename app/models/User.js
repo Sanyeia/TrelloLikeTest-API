@@ -56,6 +56,22 @@ UserSchema.virtual('full_name').get(() => {
     return this.name.firstname + ' ' + this.name.lastname;
 });
 
+//search function
+UserSchema.query.searchUser = function (search) {
+    //create the regex for the query with the given search ignoring case
+    search = new RegExp(search, 'i');
+    query = {
+        $or: [
+            { 'name.firstname': search },
+            { 'name.lastname': search },
+            { username: search },
+            { email: search }
+        ]
+    };
+
+    return this.where(query);
+};
+
 /**
  * =================
  * Plugins

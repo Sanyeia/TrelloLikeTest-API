@@ -102,6 +102,35 @@ app.get('/:id', (req, res) => {
         });
 });
 
+app.get('/:id/users', (req, res) => {
+    let search = req.query.search;
+    
+    //the search parameter is mandatory in this request
+    if(!search) return errorResponse(res, 'you must search by some value', 422);
+    
+    Task.findOne({ _id: req.params.id }, (err, task) => {
+        if (err) return errorResponse(res, err, 400);
+
+        if (!task) return errorResponse(res, 'Task not found', 404);
+
+        //skips the users already assigned to the task
+        let query = {_id : {$nin : task.users}}
+        
+        User.find(query)
+        .searchUser(search)
+        //the search is limited to 10 so if the search is too ambiguous it doesn't return too many results
+        .limit(10) 
+        .exec((err, users) => {
+            if (err) return errorResponse(res, err, 400);
+
+            //if not error 404
+            if (!users) users = [];
+
+            return showOne(res, users, 200);
+        });
+    });
+});
+
 app.put('/:id', (req, res) => {
     let body = req.body;
     let options = { new: true, runValidators: true, context: 'query' };
@@ -139,19 +168,19 @@ app.patch('/:id/assign', (req, res) => {
             if (!user) return errorResponse(res, 'Invalid user', 404);
 
             let valid = task.users.includes(user._id);
-            if(action === 1){
+            if (action === 1) {
                 //checks if the user is already assign to the task
                 if (valid) return errorResponse(res, 'User already assigned to this task', 409);
-                
+
                 task.users.push(user._id);
-            }else{
+            } else {
                 if (!valid) return errorResponse(res, "User isn't assigned to this task", 409);
                 //removes the user from the assigned attributte in the task
-                task.users = task.users.filter(function(u_id){ return u_id == user._id });
+                task.users = task.users.filter(function (u_id) { return u_id == user._id });
             }
 
             await task.save();
-            
+
             return showOne(res, task, 200);
         });
     });
