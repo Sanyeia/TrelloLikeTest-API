@@ -29,6 +29,7 @@ app.use('/user', [checkToken], UserController);
 
 //task routes
 app.post('/list/:list/task', [checkToken], TaskController.newTask);
+app.get('/task/search', [checkToken], TaskController.searchTasks);
 app.get('/list/:list/task', [checkToken], TaskController.listTasks);
 app.use('/task', [checkToken], TaskController.resource);
 

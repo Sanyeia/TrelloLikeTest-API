@@ -35,16 +35,14 @@ let TaskSchema = new Schema({
 });
 
 //search function
-TaskSchema.statics.findByTitle = function (search, list_id) {
-    //only tasks from the list
-    let query = { list: list_id };
-    if (search) {
-        //create the regex for the query with the given search ignoring case
-        search = new RegExp(search, 'i');
-        query.$or = [{ title: search }];
-    }
+TaskSchema.query.findByTitle = function (search) {
+    //create the regex for the query with the given search ignoring case
+    search = new RegExp(search, 'i');
+    let query = {
+        $or: [{ title: search }]
+    };
 
-    return this.find(query).sort('order');
+    return this.where(query);
 };
 
 //query helper that filters tasks by status
@@ -59,7 +57,6 @@ TaskSchema.query.filterStatus = function (status) {
         //by default returns only tasks with status different from 4 (Archived)
         query.status = { $ne: 4 };
     }
-    console.log(status,query);    
     return this.where(query);
 };
 

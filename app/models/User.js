@@ -63,7 +63,7 @@ UserSchema.virtual('full_name').get(() => {
  */
 
 //hidden attributes plugin, hide password when the user is returned
-UserSchema.plugin(mongooseHidden, { hidden: { password: true } })
+UserSchema.plugin(mongooseHidden, { hidden: { _id: false, password: true } });
 
 //softdelete plugin
 UserSchema.plugin(mongoose_delete, { overrideMethods: ['count', 'find', 'findOne', 'findOneAndUpdate', 'update'] });
