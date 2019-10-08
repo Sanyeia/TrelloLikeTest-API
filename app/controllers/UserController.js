@@ -1,80 +1,53 @@
-const express = require('express');
-const fileUpload = require('express-fileupload');
 const { showOne, errorResponse, showAll } = require('../extra/responser');
-const User = require('../models/User');
-const paginate = require('../extra/paginate');
+const _uS = require('../services/UserService');
 
-const app = express();
-app.use(fileUpload({ parseNested: true }));
-
-app.get('/', (req, res) => {
-    let search = req.query.search;
-    let query = {};
-    if (search) {
-        //create the regex for the query with the given search ignoring case
-        search = new RegExp(search, 'i');
-        query = {
-            $or: [
-                { 'name.firstname': search },
-                { 'name.lastname': search },
-                { username: search },
-                { email: search }
-            ]
-        };
-    }
-
-    //query options
-    let options = {
-        select: 'name username photo email',
-        sort: { username: 1 },
-    };
-    
-    paginate(User, req.query, query, options)
-    .then( (users) => {
+let index = (req, res) => {
+    _uS.index().then( (users) => {
         return showAll(res, users, 200);
     })
     .catch( (err) => {
         return errorResponse(res, err, 400);
     });
-});
+};
 
-app.put('/:id', (req, res) => {
+let store = (req, res) => {
+    let data = req.body;
+
+    _uS.create(data).then( (user) => {
+        return showOne(res, user, 201);
+    }).catch( (err) => {
+        return errorResponse(res, err, 400);
+    });
+}
+
+let update = async (req, res) => {
     let id = req.params.id;
+    let data = req.body;
 
-    User.findByIdAndUpdate(id, {$set: req.body}, { new: true, runValidators: true, context: 'query' }, async (err, user) => {
-        if (err) {
-            return errorResponse(res, err, 400);
-        }
-
-        if (!user) {
-            return errorResponse(res, 'User not found', 404);
-        }
-
-        if (Object.keys(req.files).length != 0 && req.files.image) {
-            let url = updateFile('user', req.files.image, user.photo);
-
-            if (url) {
-                user.photo = url;
-                await user.save();
-            }
-        }
-
+    _uS.update(id, data)
+    .then( (user) => {
         return showOne(res, user, 200);
+    })
+    .catch( (err) => {
+        return errorResponse(res, err, 400);
     });
-});
+};
 
-app.delete('/:id', (req, res) => {
-    User.findById(req.params.id, (err, user) => {
-        if (err) return errorResponse(res, err, 400);
+let remove = (req, res) => {
 
-        if (!user) return errorResponse(res, 'User not found', 404);
-
-        user.remove((err, user) => {
-            if (err) return errorResponse(res, err, 400);
-            
-            return showOne(res, user, 200);
-        });
+    _uS.delete(req.params.id)
+    .then( (user) => {
+        return showOne(res, user, 200);
+    })
+    .catch( (err) => {
+        console.log(err);
+        return errorResponse(res, err, 400);
     });
-});
+};
 
-module.exports = app;
+module.exports = {
+    index,
+    store,
+    update,
+    remove
+};

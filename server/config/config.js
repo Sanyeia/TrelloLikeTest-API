@@ -40,4 +40,4 @@ process.env.TOKEN_SEED = 'seed_de_desarrollo';
  * =============================
  */
 // process.env.URL_DB = 'mongodb://{user}:{pass}@{host}:{port}/{bd}';
-process.env.URL_DB = 'mongodb://localhost:27017/newappDB';
+process.env.URL_DB = 'mongodb://localhost:27017/memtrainer';

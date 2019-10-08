@@ -1,6 +1,10 @@
 const express = require('express');
 const app = express();
+//accept form data with files
+const fileUpload = require('express-fileupload');
+//check auth
 const { checkToken } = require('../../app/middlewares/auth');
+
 
 /**
  * =============================
@@ -9,31 +13,26 @@ const { checkToken } = require('../../app/middlewares/auth');
  */
 let imagesController = require('../../app/controllers/imagesController');
 let LoginController = require('../../app/controllers/LoginController');
-let RegisterController = require('../../app/controllers/RegisterController');
 let UserController = require('../../app/controllers/UserController');
-let ListController = require('../../app/controllers/ListController');
-let TaskController = require('../../app/controllers/TaskController');
 
 /**
  * =============================
  * Routes
  * =============================
  */
-// image route
-app.use('/images', [checkToken], imagesController);
+// images
+app.get('/images/:type/:name', [checkToken], imagesController.getImage);
 
-// user routes
-app.use('/login', LoginController);
-app.use('/register', RegisterController);
-app.use('/user', [checkToken], UserController);
 
-//task routes
-app.post('/list/:list/task', [checkToken], TaskController.newTask);
-app.get('/task/search', [checkToken], TaskController.searchTasks);
-app.get('/list/:list/task', [checkToken], TaskController.listTasks);
-app.use('/task', [checkToken], TaskController.resource);
+// login
+app.post('/login', LoginController.login);
+//register
+app.post('/register', [checkToken], UserController.store);
 
-//list routes
-app.use('/list', [checkToken], ListController);
+
+app.get('/users', [checkToken], UserController.index);
+app.put('/users/:id', UserController.update);
+app.delete('/users/:id', [checkToken], UserController.remove);
+
 
 module.exports = app;
