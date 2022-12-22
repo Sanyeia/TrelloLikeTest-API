@@ -16,7 +16,7 @@
     "deep_pick": "0.0.9",
     "express": "^4.17.1",
     "express-fileupload": "^1.1.5",
-    "jsonwebtoken": "^8.5.1",
+    "jsonwebtoken": "^9.0.0",
     "mongoose": "^5.6.13",
     "mongoose-delete": "^0.5.1",
     "mongoose-hidden": "^1.7.1",
